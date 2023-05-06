@@ -1125,3 +1125,50 @@ class Modem:
 		if read[-1] != "OK":
 			raise Exception("AT+CREC=6 failed")
 		return read[2] #b'F8C...etc...090\r\n'
+
+	def StartRecordAndSendAudio(self) -> str:
+		# <mode>     1 Start record, 
+		# <interval> range 1-50, unit is 20ms 
+		# <crcmode>  Data form 0 UART data is the audio data
+		
+		if self.debug:
+			self.comm.send("AT+CRECORD=1,50,1")
+			read = self.comm.read_lines()
+			if read[-1] != "OK":
+				raise Exception("Unsupported AT+CRECORD command")
+			print("Sending: AT+CRECORD=1,50,1")
+
+		self.comm.send("AT+CRECORD=1,50,1")
+		read = self.comm.read_lines()
+
+		
+		if self.debug:
+			print("AT+CRECORD=1,50,1 responded: ", read)
+
+		if read[-1] != "OK":
+			raise Exception("AT+CRECORD=1,50,1 failed")
+		# return read[1].split(",")[2].strip('"')
+		return read
+	
+	def StopRecordAndSendAudio(self) -> str:
+		# <mode>     0 Stop record, 
+		
+		if self.debug:
+			self.comm.send("AT+CRECORD=0")
+			read = self.comm.read_lines()
+			if read[-1] != "OK":
+				raise Exception("Unsupported AT+CRECORD command")
+			print("Sending: AT+CRECORD=0")
+
+		self.comm.send("AT+CRECORD=0")
+		read = self.comm.read_lines()
+
+		
+		if self.debug:
+			print("AT+CRECORD=0 responded: ", read)
+
+		if read[-1] != "OK":
+			raise Exception("AT+CRECORD=0 failed")
+		# return read[1].split(",")[2].strip('"')
+		return read
+
