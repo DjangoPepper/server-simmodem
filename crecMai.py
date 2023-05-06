@@ -4,7 +4,7 @@
 
 from src.sim_audio import *
 from src.sim_sql import *
-from src.sim_modem import *
+from src.simmodem import *
 from src.sim_hardaware import *
 
 import time

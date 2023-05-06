@@ -2,5 +2,5 @@
 __version__ = "0.0.1"
 
 from .src import serial_comm
-from .src import sim_modem
+from .src import simmodem
 #
