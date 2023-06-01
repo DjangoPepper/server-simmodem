@@ -1,4 +1,4 @@
-from serial_comm import SerialComm
+from src.serial_comm import SerialComm
 import time
 from enum import Enum
 from logging import getLogger
@@ -713,13 +713,17 @@ class Modem:
 			raise Exception("Command failed")
 		return read[1]
 		# ----------------------------------- SIM-SERVER ---------------------------------- #
-	def get_sim_status(self, NEW_TIMEOUT) -> str:
+	
+	# ----------------------------------- FRED ---------------------------------- #	
+	
+	def depreacated_get_sim_status(self, NEW_TIMEOUT) -> str:
 		backup_timeout = self.comm.modem_serial.timeout
 		self.comm.modem_serial.timeout = NEW_TIMEOUT
 		if self.debug:
 			self.comm.send("AT+CPIN=?")
 			read = self.comm.read_lines()
 			if read[-1] != "OK":
+				print(read)
 				raise Exception("Unsupported command")
 			print("Sending: AT+CPIN?")        
 		self.comm.send("AT+CPIN?")
@@ -753,7 +757,7 @@ class Modem:
 	      )
 		elif sim_status == "READY":
 			# sim_status = self.get_sim_status(newtimeout)
-			# return "REaDY"
+			return "REaDY"
 			pass
 		else :
 			raise Exception("Sim failed")
@@ -833,7 +837,7 @@ class Modem:
 				raise Exception("Noisy and failed")
 			return True
 
-	def check_Callstatus(self,_ONLINE_FLAG, _CAN_RECORD_FLAG) -> str:
+	def depreacated_check_Callstatus(self,_ONLINE_FLAG, _CAN_RECORD_FLAG) -> str:
 		print ("    _ONLINE_FLAG {}".format(_ONLINE_FLAG))	# = False
 		print ("_CAN_RECORD_FLAG {}".format(_CAN_RECORD_FLAG))	# = False 
 		while True :
@@ -949,7 +953,7 @@ class Modem:
 			return None
 		"""
 	
-	def get_CLCC(self, __ONLINE_FLAG, __CAN_RECORD_FLAG) -> str: #default FLAGS ARE FALSE
+	def depreacated_get_CLCC(self, __ONLINE_FLAG, __CAN_RECORD_FLAG) -> str: #default FLAGS ARE FALSE
 		# _FLAG_RECORD = FLAG_RECORD
 		if self.debug:
 			print("Sending: AT+CLCC")
@@ -959,7 +963,7 @@ class Modem:
 		
 
 		if self.debug:
-			print("Device CLCC? responded: ", read)
+			print("Device CLCC? respondead: ", read)
 			print(".")
 		
 		# Device CLCC? responded:  ['AT+CLCC', 'OK']
@@ -1054,7 +1058,7 @@ class Modem:
 		# 	__FLAG_RECORD = True
 		# 	return "RecordCall"
 
-	def check_connected(self) -> str: #default FLAGS ARE FALSE
+	def check_callinprogress(self) -> str: #default FLAGS ARE FALSE
 		self.comm.send("AT+CLCC")
 		read = self.comm.read_lines()
 
@@ -1063,15 +1067,25 @@ class Modem:
 			print("Device CLCC? responded: ", read)
 		
 		if len(read) >= 4 and read[-1] == "OK":
+			if self.debug:
+				print ("CLCC correct length and callback ok")
 			try: 
 				bidir = read[1].split(": ")[1].split(",")[0]
+				if self.debug:
+					print ("CLCC extracting bidir ",bidir)
 			except :
 				bidir = 9 
+				if self.debug:
+					print ("CLCC bidir incorrect", bidir)
 			
 			try:
 				state = read[1].split(": ")[1].split(",")[2]	#state
+				if self.debug:
+					print ("CLCC extracting state", state)
 			except : 
 				state = 9
+				if self.debug:
+					print ("CLCC state incorrect", state)
 			
 			if bidir == "1" and state == "0" :
 				# FLAG_CONNECTED = True
@@ -1080,6 +1094,8 @@ class Modem:
 				# FLAG_CONNECTED = False
 				return False
 		else : 
+			if self.debug:
+				print ("CLCC INcorrect length and callback")
 			# FLAG_CONNECTED = False
 			return False
 
@@ -1127,29 +1143,17 @@ class Modem:
 		return read[2] #b'F8C...etc...090\r\n'
 
 	def StartRecordAndSendAudio(self) -> str:
-		# <mode>     1 Start record, 
-		# <interval> range 1-50, unit is 20ms 
+		# <mode>     1 Start record, to stop send anything on uart
+		# <interval> range 1-50, unit is 20ms 50*20 = 1000ms soit 1s 
 		# <crcmode>  Data form 0 UART data is the audio data
 		
-		if self.debug:
-			self.comm.send("AT+CRECORD=1,50,1")
-			read = self.comm.read_lines()
-			if read[-1] != "OK":
-				raise Exception("Unsupported AT+CRECORD command")
-			print("Sending: AT+CRECORD=1,50,1")
-
-		self.comm.send("AT+CRECORD=1,50,1")
+		self.comm.send("AT+CRECORD=1,50,0") #1 record,50*20ms = 1 seconde,0 audio data
 		read = self.comm.read_lines()
-
-		
-		if self.debug:
-			print("AT+CRECORD=1,50,1 responded: ", read)
-
-		if read[-1] != "OK":
-			raise Exception("AT+CRECORD=1,50,1 failed")
-		# return read[1].split(",")[2].strip('"')
 		return read
 	
+		# readraw = self.comm.read_raw(100)
+		# return readraw
+		
 	def StopRecordAndSendAudio(self) -> str:
 		# <mode>     0 Stop record, 
 		
@@ -1171,4 +1175,181 @@ class Modem:
 			raise Exception("AT+CRECORD=0 failed")
 		# return read[1].split(",")[2].strip('"')
 		return read
+	
+	# AT+CREC=1,1,0 
+	# 1,record
+	# 1,id
+	# 0, amr
+	# 1, wav
+	
+	def start_record(self,id,form) -> str:
+		if self.debug:
+			# .format(volume)
+			self.comm.send("AT+CREC=1,{},{}".format(id,form))
+			read = self.comm.read_lines()
+			if read[-1] != "OK":
+				raise Exception("Unsupported AT+CREC=7 command")
+			print("Sending: AT+CREC=1,{},{}".format(id,form))
 
+		self.comm.send("AT+CREC=1,{},{}".format(id,form))
+		read = self.comm.read_lines()
+
+		# ['AT+CREC=1', 'OK']
+		if self.debug:
+			print("AT+CREC=1,{}".format(id),"responded: ", read)
+
+		if read[-1] != "OK":
+			raise Exception("AT+CREC=1,{}".format(id),"failed")
+		# return read[1].split(",")[2].strip('"')
+		# return read[1].split(",")[2]
+		return read[-1]
+	
+	def stop_record(self) -> str:
+		if self.debug:
+			self.comm.send("AT+CREC=2")
+			read = self.comm.read_lines()
+			if read[-1] != "OK":
+				raise Exception("Unsupported AT+CREC=2 command")
+			print("Sending: AT+CREC=2")
+
+		self.comm.send("AT+CREC=2")
+		read = self.comm.read_lines()
+
+		# ['AT+CREC=1', 'OK']
+		if self.debug:
+			print("AT+CREC=2 responded: ", read)
+
+		if read[-1] != "OK":
+			raise Exception("AT+CREC=2 failed")
+		# return read[1].split(",")[2].strip('"')
+		# return read[1].split(",")[2]
+		return read[-1]
+	
+	def delete_record(self) -> str:
+		if self.debug:
+			self.comm.send("AT+CREC=3")
+			read = self.comm.read_lines()
+			if read[-1] != "OK":
+				raise Exception("Unsupported AT+CREC=3 command")
+			print("Sending: AT+CREC=3")
+
+		self.comm.send("AT+CREC=3")
+		read = self.comm.read_lines()
+
+		# ['AT+CREC=1', 'OK']
+		if self.debug:
+			print("AT+CREC=3 responded: ", read)
+
+		if read[-1] != "OK":
+			raise Exception("AT+CREC=3 failed")
+		# return read[1].split(",")[2].strip('"')
+		# return read[1].split(",")[2]
+		return read[-1]
+	
+	def play_record(self,id,channel,level) -> str:
+		if self.debug:
+			self.comm.send("AT+CREC=4,{},{},{}".format(id.channel.level))
+			read = self.comm.read_lines()
+			if read[-1] != "OK":
+				raise Exception("Unsupported AT+CREC=4 command")
+			print("Sending: AT+CREC=4,{},{},{}".format(id.channel.level))
+
+		self.comm.send("AT+CREC=4,{},{},{}".format(id.channel.level))
+		read = self.comm.read_lines()
+
+		# ['AT+CREC=1', 'OK']
+		if self.debug:
+			print("AT+CREC=4,{},{},{}".format(id.channel.level),"responded: ", read)
+
+		if read[-1] != "OK":
+			raise Exception("AT+CREC=4,{},{},{}".format(id.channel.level),"failed")
+		# return read[1].split(",")[2].strip('"')
+		# return read[1].split(",")[2]
+		return read[-1]
+	
+	def stop_play_record(self) -> str:
+		if self.debug:
+			self.comm.send("AT+CREC=5")
+			read = self.comm.read_lines()
+			if read[-1] != "OK":
+				raise Exception("Unsupported AT+CREC=5 command")
+			print("Sending: AT+CREC=5")
+
+		self.comm.send("AT+CREC=5")
+		read = self.comm.read_lines()
+
+		# ['AT+CREC=1', 'OK']
+		if self.debug:
+			print("AT+CREC=5 responded: ", read)
+
+		if read[-1] != "OK":
+			raise Exception("AT+CREC=5 failed")
+		# return read[1].split(",")[2].strip('"')
+		# return read[1].split(",")[2]
+		return read[-1]
+	
+	#Get record data in hex format, the max length is 32K in bytes
+	def get_data_record(self,id,len,offset) -> str:
+		if self.debug:
+			self.comm.send("AT+CREC=6,{},{},{}".format(id,len,offset))
+			read = self.comm.read_lines()
+			if read[-1] != "OK":
+				raise Exception("Unsupported AT+CREC=6 command")
+			print("Sending: AT+CREC=6,{},{},{}".format(id,len,offset))
+
+		self.comm.send("AT+CREC=6,{},{},{}".format(id,len,offset))
+		read = self.comm.read_lines()
+
+		# ['AT+CREC=1', 'OK']
+		if self.debug:
+			print("AT+CREC=6,{},{},{}".format(id,len,offset),"responded: ", read)
+
+		if read[-1] != "OK":
+			raise Exception("AT+CREC=6,{},{},{}".format(id,len,offset),"failed")
+		# return read[1].split(",")[2].strip('"')
+		# return read[1].split(",")[2]
+		return read[-1]
+		
+	def list_record(self,id) -> str:
+		if self.debug:
+			# .format(volume)
+			self.comm.send("AT+CREC=7,{}".format(id))
+			read = self.comm.read_lines()
+			if read[-1] != "OK":
+				raise Exception("Unsupported AT+CREC=7 command")
+			print("Sending: AT+CREC=7,{}".format(id))
+
+		self.comm.send("AT+CREC=7,{}".format(id))
+		read = self.comm.read_lines()
+
+		# ['AT+CREC=1', 'OK']
+		if self.debug:
+			print("AT+CREC=7,{}".format(id),"responded: ", read)
+
+		if read[-1] != "OK":
+			raise Exception("AT+CREC=7,{}".format(id),"failed")
+		# return read[1].split(",")[2].strip('"')
+		# return read[1].split(",")[2]
+		return read[-1]
+		
+	def space_record(self) -> str:
+		if self.debug:
+			self.comm.send("AT+CREC=8")
+			read = self.comm.read_lines()
+			if read[-1] != "OK":
+				raise Exception("Unsupported AT+CREC=8 command")
+			print("Sending: AT+CREC=8")
+
+		self.comm.send("AT+CREC=8")
+		read = self.comm.read_lines()
+
+		# ['AT+CREC=1', 'OK']
+		if self.debug:
+			print("AT+CREC=8 responded: ", read)
+
+		if read[-1] != "OK":
+			raise Exception("AT+CREC=8 failed")
+		# return read[1].split(",")[2].strip('"')
+		# return read[1].split(",")[2]
+		return read[-1]
+	
