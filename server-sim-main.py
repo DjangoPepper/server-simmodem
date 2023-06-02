@@ -11,7 +11,7 @@ from src.sim_hardaware import *
 import time
 import datetime
 
-modem = Modem('/dev/ttyS0', baudrate=115200, timeout=2, at_cmd_delay=0.1, debug=True)
+modem = Modem('/dev/ttyS0', baudrate=115200, timeout=0.5, at_cmd_delay=0.1, debug=True)
 
 FLAG_ONLINE = False
 
@@ -40,9 +40,12 @@ TELM = "0664018952"
 TELB = "0800943376"
 TEL = TELB
 
+global RECORDED_MESSAGE
+RECORDED_MESSAGE = bin(0)
+
 def CreateSoundFileName(_APPELANT_SRV) -> str:
     # FILENAME = str(_APPELANT_SRV) + "_" + str(CreateFileNameWithDate()) + ".wav"
-    FILENAME = str(_APPELANT_SRV) + "_" + str(datetime.datetime.now().strftime('%Y-%m-%d_%H%M:%S')) + ".amr"
+    FILENAME = str(_APPELANT_SRV) + "_" + str(datetime.datetime.now().strftime('%Y-%m-%d_%H%M%S')) + ".amr"
     return FILENAME
 
 def CallCountDown(t):
@@ -55,35 +58,16 @@ def CallCountDown(t):
 		time.sleep(1)
 		t -= 1
 
-def transcibeurre():
-	#  vosk-transcriber -i stem_record.wav -o text_stem_record.txt -n vosk-model-fr-0.22
-	 pass
-
-def MacAndCheese(_USER_ID, _APPELANT_SRV,_DTMF_SONG):
-	print("user id : ", _USER_ID)
-	
-	# CallCountDown(1)
-	FLAG_CAN_RECORD = modem.send_dtmf_code(_DTMF_SONG)
-	print("DTMF SEND")
-
-	# CallCountDown(1)
-	if FLAG_CAN_RECORD == True and FLAG_RECORDED == False:
-		myaudio.recordheure(_APPELANT_SRV)
-		print ("AUDIO DONE")
-		FLAG_RECORDED = True
-		FLAG_CAN_RECORD = False
-
 def main_initmodem():
-	# modem.set_cmee(0)
-	# # signal_quality_range  = modem.get_signal_quality_range()
-	# modem.get_signal_quality_range()
-	# # modem.check_sim_pin(5, PIN_NUMBER)
-	# modem.check_sim_pin(5, PIN_NUMBER)
-	# # network_status = modem.get_network_registration_status()
+	modem.set_cmee(0)
+	modem.set_mode_record(2)
+	modem.get_signal_quality_range()
+	modem.check_sim_pin(5, PIN_NUMBER)
 	modem.get_network_registration_status()
 	modem.set_recognition(0)
 	modem.set_vtd(10)
 	modem.hangup()
+
 
 def main_loop():
 		global USER_ID
@@ -99,43 +83,54 @@ def main_loop():
 				
 		if FLAG_OFFLINE == True:
 			modem.call(TEL)
-			# CallCountDown(2)
-			FLAG_CONNECTED = modem.check_callinprogress()
-			for x in range (5):
+			CallCountDown(5)
+			# FLAG_CONNECTED = modem.check_callinprogress()
+			for x in range (10):
 				if FLAG_CONNECTED == False :
 					FLAG_CONNECTED = modem.check_callinprogress()
 					print ("Recall : ", x)
-					# CallCountDown(1)
-					if x == 4 :
+					CallCountDown(2)
+					if x > 10 :
 						print("server didn't answer")
 						modem.hangup()
 						main_exit()	
 			
 			if FLAG_CONNECTED == True :
-				print("user id : ", USER_ID)
-				print("Must waiting....")
-				CallCountDown(3)
+				# print("user id : ", USER_ID)
+				# print("Must waiting....")
+				# CallCountDown(3)
 				FLAG_CAN_RECORD = modem.send_dtmf_code(DTMF_SONG)
 				print("DTMF SEND")
-				recorded=""
+				
 
 			if FLAG_CAN_RECORD == True and FLAG_RECORDED == False :
-				print ("RECORD AUDIO in progress")
-				# modem.StartRecordAndSendAudio()
-				# CallCountDown(5)
-				# modem.StopRecordAndSendAudio()
+				print ("RECORD AMR AUDIO id 1 in progress")
+				modem.start_record(1,0) #record call in id/slot and channel 0
+				t = 0
+				while FLAG_CONNECTED == True :
+					FLAG_CONNECTED = modem.check_callinprogress()
+					mins, secs = divmod(t, 60)
+					timer = '{:02d}:{:02d}'.format(mins, secs)
+					print(timer, end="\r")
+					# time.sleep(1)
+					t += 1
+					if t > 121 :
+						FLAG_CONNECTED = False
 				modem.hangup()
-
+				modem.stop_record()
+				modem.list_record(1)
+				modem.hangup()
 				FLAG_CAN_RECORD = False
 				FLAG_CONNECTED  = False
 				FLAG_OFFLINE = True
 				FLAG_CONNECTED = False
-
 				print ("RECORD AUDIO ended")
-
+				RECORDED_SIZE = modem.size_record()
+				RECORDED_MESSAGE = modem.get_data_record(1,RECORDED_SIZE,0)
+				res = bytes(RECORDED_MESSAGE, 'utf-8')
 				FILENAME = CreateSoundFileName(USER_ID)
 				datafile=open(FILENAME, 'xb')
-				datafile.write(recorded)
+				datafile.write(res)
 				print ("RECORD File create")
 				# 	main_exit()
 
