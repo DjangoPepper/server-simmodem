@@ -1392,7 +1392,7 @@ class Modem:
 			raise Exception("AT+CREC=8 failed")
 		# return read[1].split(",")[2].strip('"')
 		# return read[1].split(",")[2]
-		return read[-1]
+	# k	return read[-1]
 	
 	#a
 	def status_record(self) -> str:
@@ -1434,12 +1434,14 @@ class Modem:
 		self.comm.send("AT+CREC=7,{}".format(id))
 		read = self.comm.read_lines()
 		if read[-1] != "OK":
+				return 0
 				raise Exception("Unsupported AT+CREC=7 command {}", read)
 		
 		if self.debug:
 			print("AT+CREC=7,{}".format(id),"responded: ", read)
-		# ['AT+CREC=7,1', '+CREC: 7,1,24966,0', '', 'OK']
 		
-		return read[1].split(": ")[2].strip(',')
+		# ['AT+CREC=7,1', '+CREC: 7,1,24966,0', '', 'OK']
+		return read[1].split(": ")[1].split(",")[2]
+			
 
 	

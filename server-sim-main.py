@@ -84,7 +84,7 @@ def main_loop():
 		if FLAG_OFFLINE == True:
 			modem.call(TEL)
 			CallCountDown(5)
-			# FLAG_CONNECTED = modem.check_callinprogress()
+			FLAG_CONNECTED = modem.check_callinprogress()
 			for x in range (10):
 				if FLAG_CONNECTED == False :
 					FLAG_CONNECTED = modem.check_callinprogress()
@@ -120,17 +120,21 @@ def main_loop():
 				modem.stop_record()
 				modem.list_record(1)
 				modem.hangup()
+				
 				FLAG_CAN_RECORD = False
 				FLAG_CONNECTED  = False
 				FLAG_OFFLINE = True
 				FLAG_CONNECTED = False
 				print ("RECORD AUDIO ended")
-				RECORDED_SIZE = modem.size_record()
+				
+				RECORDED_SIZE = modem.size_record(1)
 				RECORDED_MESSAGE = modem.get_data_record(1,RECORDED_SIZE,0)
-				res = bytes(RECORDED_MESSAGE, 'utf-8')
+				RECORDED_MESSAGE = bytes(RECORDED_MESSAGE, 'utf-8')
+				print ("RECORD Downloaded")
+				
 				FILENAME = CreateSoundFileName(USER_ID)
 				datafile=open(FILENAME, 'xb')
-				datafile.write(res)
+				datafile.write(RECORDED_MESSAGE)
 				print ("RECORD File create")
 				# 	main_exit()
 
