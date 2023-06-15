@@ -62,7 +62,7 @@ def CallCountDown(t):
 
 def transcibeurre():
 	#  vosk-transcriber -i stem_record.wav -o text_stem_record.txt -n vosk-model-fr-0.22
-	 pass
+	pass
 
 def MacAndCheese(_USER_ID, _APPELANT_SRV,_DTMF_SONG):
 	print("user id : ", _USER_ID)

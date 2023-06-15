@@ -51,7 +51,6 @@ class Modem:
 			at_cmd_delay=at_cmd_delay,
 		)
 		self.debug = debug
-
 		self.comm.send("ATZ")
 		self.comm.send("ATE1")
 		read = self.comm.read_lines()
@@ -214,7 +213,7 @@ class Modem:
 				raise Exception("Unsupported command")
 			print("Sending: AT+AT+PWRCTL=0,1,3")
 
-		# ['AT+AT+PWRCTL=?', '+PWRCTL: (0-1),(0-1),(0-3)', '', 'OK']
+		# ['AT+PWRCTL=?', '+PWRCTL: (0-1),(0-1),(0-3)', '', 'OK']
 		self.comm.send("AT+PWRCTL=0,1,3")
 		read = self.comm.read_lines()
 
@@ -712,10 +711,10 @@ class Modem:
 		if read[-1] != "OK":
 			raise Exception("Command failed")
 		return read[1]
-		# ----------------------------------- SIM-SERVER ---------------------------------- #
-	
+	# ----------------------------------- SIM-SERVER ---------------------------------- #
+
 	# ----------------------------------- FRED ---------------------------------- #	
-	
+
 	def get_sim_status(self, NEW_TIMEOUT) -> str:
 		backup_timeout = self.comm.modem_serial.timeout
 		self.comm.modem_serial.timeout = NEW_TIMEOUT
@@ -725,7 +724,7 @@ class Modem:
 			if read[-1] != "OK":
 				print(read)
 				raise Exception("Unsupported command")
-			print("Sending: AT+CPIN?")        
+			print("Sending: AT+CPIN?")
 		self.comm.send("AT+CPIN?")
 		read = self.comm.read_lines()
 		# print(read)
@@ -750,18 +749,18 @@ class Modem:
 		return read-[1]
 
 	def check_sim_pin(self,newtimeout, newpinnumber) -> str:
-		sim_status = self.get_sim_status(newtimeout)
+		sim_status = self.get_sim_status(1) #1sec timeout
+		# sim_status = self.get_sim_status(newtimeout)
 		if sim_status == "SIM PIN":
 			self.set_sim_pin(newpinnumber)
-			time.sleep(5
-	      )
+			time.sleep(newtimeout)
 		elif sim_status == "READY":
 			# sim_status = self.get_sim_status(newtimeout)
 			return "REaDY"
 			pass
 		else :
 			raise Exception("Sim failed")
-		
+
 	def set_cmee(self, value) -> str:
 		if self.debug:
 			print("AT+CMEE={}".format(value))
@@ -773,7 +772,7 @@ class Modem:
 		if read[-1] != "OK":
 			raise Exception("Command failed")
 		return read[1]
-	
+
 	def set_recognition(self, value) -> str:
 		if self.debug:
 			self.comm.send("AT+COLP={}".format(value))
@@ -792,7 +791,7 @@ class Modem:
 		if read[-1] != "OK":
 			raise Exception("Command failed")
 		return read[1]
-	
+
 	def set_vtd(self, value) -> str:
 		if self.debug:
 			self.comm.send("AT+VTD={}".format(value))
@@ -804,7 +803,6 @@ class Modem:
 		self.comm.send("AT+VTD={}".format(value))
 		read = self.comm.read_lines()
 
-		# ['AT+COLP=x', 'OK']
 		if self.debug:
 			print("Device responded: ", read)
 
@@ -1099,64 +1097,65 @@ class Modem:
 			FLAG_CONNECTED = False
 			return False
 
-	def get_crec_list(self) -> str:
-		if self.debug:
-			self.comm.send("AT+CREC=7")
-			read = self.comm.read_lines()
-			if read[-1] != "OK":
-				raise Exception("Unsupported AT+CREC=7 command")
-			print("Sending: AT+CREC=7")
+	# def depreacated_get_crec_list(self) -> str:
+	# 	if self.debug:
+	# 		self.comm.send("AT+CREC=7")
+	# 		read = self.comm.read_lines()
+	# 		if read[-1] != "OK":
+	# 			raise Exception("Unsupported AT+CREC=7 command")
+	# 		print("Sending: AT+CREC=7")
 
-		self.comm.send("AT+CREC=7")
-		read = self.comm.read_lines()
+	# 	self.comm.send("AT+CREC=7")
+	# 	read = self.comm.read_lines()
 
-		# ['AT+CREC=7', '+CREC: 7,1,6118,0', '+CREC: 7,2,6502,0', '', 'OK']
-		if self.debug:
-			print("AT+CREC=7 responded: ", read)
+	# 	# ['AT+CREC=7', '+CREC: 7,1,6118,0', '+CREC: 7,2,6502,0', '', 'OK']
+	# 	if self.debug:
+	# 		print("AT+CREC=7 responded: ", read)
 
-		if read[-1] != "OK":
-			raise Exception("AT+CREC=7 failed")
-		# return read[1].split(",")[2].strip('"')
-		return read[1].split(",")[2]
+	# 	if read[-1] != "OK":
+	# 		raise Exception("AT+CREC=7 failed")
+	# 	# return read[1].split(",")[2].strip('"')
+	# 	return read[1].split(",")[2]
 
-	def get_crec_idone(self) -> str:
-		zobilamaouche = self.get_crec_list()
-		print("zobilamaouche", zobilamaouche)
-		if int(zobilamaouche) > 32768 :
-			raise Exception("Too Big file length")
-		if self.debug:
-			# print("Sending: AT+CLVL={}".format(volume))
-			self.comm.send("AT+CREC=6,1,{},0".format(self.get_crec_list()))
-			read = self.comm.read_lines()
-			if read[-1] != "OK":
-				raise Exception("Unsupported AT+CREC=6 command")
-			print("Sending: AT+CREC=6,1,{},0".format(self.get_crec_list()))
+	# def depreacated_get_crec_idone(self) -> str:
+	# 	zobilamaouche = self.get_crec_list()
+	# 	print("zobilamaouche", zobilamaouche)
+	# 	if int(zobilamaouche) > 32768 :
+	# 		raise Exception("Too Big file length")
+	# 	if self.debug:
+	# 		# print("Sending: AT+CLVL={}".format(volume))
+	# 		self.comm.send("AT+CREC=6,1,{},0".format(self.get_crec_list()))
+	# 		read = self.comm.read_lines()
+	# 		if read[-1] != "OK":
+	# 			raise Exception("Unsupported AT+CREC=6 command")
+	# 		print("Sending: AT+CREC=6,1,{},0".format(self.get_crec_list()))
 
-		self.comm.send("AT+CREC=6,1,{},0".format(self.get_crec_list()))
-		read = self.comm.read_lines()
+	# 	self.comm.send("AT+CREC=6,1,{},0".format(self.get_crec_list()))
+	# 	read = self.comm.read_lines()
 
-		# [b'AT+CREC=6,1,6118,0\r\r\n', b'+CREC: 6,1,6118\r\n', b'F8C...etc...090\r\n', b'\r\n', b'OK\r\n']
-		if self.debug:
-			print("AT+CREC=6 responded: ", read)
-		if read[-1] != "OK":
-			raise Exception("AT+CREC=6 failed")
-		return read[2] #b'F8C...etc...090\r\n'
+	# 	# [b'AT+CREC=6,1,6118,0\r\r\n', b'+CREC: 6,1,6118\r\n', b'F8C...etc...090\r\n', b'\r\n', b'OK\r\n']
+	# 	if self.debug:
+	# 		print("AT+CREC=6 responded: ", read)
+	# 	if read[-1] != "OK":
+	# 		raise Exception("AT+CREC=6 failed")
+	# 	return read[2] #b'F8C...etc...090\r\n'
 
 	def StartRecordAndSendAudio(self) -> str:
 		# <mode>     1 Start record, to stop send anything on uart
 		# <interval> range 1-50, unit is 20ms 50*20 = 1000ms soit 1s 
 		# <crcmode>  Data form 0 UART data is the audio data
-		
+
 		self.comm.send("AT+CRECORD=1,50,0") #1 record,50*20ms = 1 seconde,0 audio data
-		read = self.comm.read_lines()
+		# read = self.comm.read_lines() 	#original
+		read = self.comm.read_raw(32768)			#fred
 		return read
-	
+
 		# readraw = self.comm.read_raw(100)
-		# return readraw
-		
+		# retursend("AT+CRECORD=1,50,0")n readraw
+
 	def StopRecordAndSendAudio(self) -> str:
 		# <mode>     0 Stop record, 
-		
+
 		if self.debug:
 			self.comm.send("AT+CRECORD=0")
 			read = self.comm.read_lines()
@@ -1167,7 +1166,7 @@ class Modem:
 		self.comm.send("AT+CRECORD=0")
 		read = self.comm.read_lines()
 
-		
+
 		if self.debug:
 			print("AT+CRECORD=0 responded: ", read)
 
@@ -1175,8 +1174,8 @@ class Modem:
 			raise Exception("AT+CRECORD=0 failed")
 		# return read[1].split(",")[2].strip('"')
 		return read
-	
-	# AT+CREC=1,1,0 
+
+	# AT+CREC=1,1,0
 	# 1,record
 	# 1,id
 	# 0, amr
@@ -1191,8 +1190,8 @@ class Modem:
 		# 	print("Sending: AT+CREC=1,{},{}".format(id,form))
 
 		self.comm.send("AT+CREC=1,{},{}".format(id,form))
-		read = self.comm.read_lines()
-
+		# read = self.comm.read_lines()		#original
+		read = self.comm.read_raw(32768)	#fred
 		# ['AT+CREC=1,3,0', 'OK']
 		# if self.debug:
 		print("AT+CREC=1,{},{} responded: {}".format(id,form,read))
@@ -1230,15 +1229,16 @@ class Modem:
 		print("Sending: AT+CREC=2")
 		self.comm.send("AT+CREC=2")
 		read = self.comm.read_lines()
-		
+
 		# +CREC: 2,<id>,<form>,<time>,<len>
 		# ['AT+CREC=2', 'OK', ,'', '+CREC: 2,1,0,1,32768']
 		print("AT+CREC=2 responded: ", read)
 		
 		if len(read) == 4 :
-			recordlen = read[3].split(": ")[1].split(",")[4]
+			recordlen = int(read[3].split(": ")[1].split(",")[4])
 			# if self.debug:
 			# 	print("a new record ",recordlen)
+			# if (int(recordlen) > 0) and (int(recordlen) < 32769) :
 			if recordlen > 0 and recordlen < 32769 :
 				return True
 		else :				
@@ -1334,6 +1334,8 @@ class Modem:
 
 		self.comm.send("AT+CREC=6,{},{},{}".format(id,len,offset))
 		read = self.comm.read_lines()
+		time.sleep(5)
+		##doit attendre fin transfert !!
 		if self.debug:
 			if read[-1] != "OK":
 				raise Exception("Unsupported AT+CREC=6 command")
@@ -1407,8 +1409,8 @@ class Modem:
 				raise Exception("UnKnow AT+CREC? status")
 		#return read[-1]
 		return read[1].split(": ")[1]
-	
-	#b	
+
+	#b
 	def set_mode_record(self,mode) -> str:
 		if self.debug:
 			self.comm.send("AT+DTAM={}".format(mode))
@@ -1429,19 +1431,19 @@ class Modem:
 		# return read[1].split(",")[2].strip('"')
 		# return read[1].split(",")[2]
 		return read[-1]
-	
+
 	def size_record(self,id) -> str:
 		self.comm.send("AT+CREC=7,{}".format(id))
 		read = self.comm.read_lines()
 		if read[-1] != "OK":
 				return 0
 				raise Exception("Unsupported AT+CREC=7 command {}", read)
-		
+
 		if self.debug:
 			print("AT+CREC=7,{}".format(id),"responded: ", read)
-		
+
 		# ['AT+CREC=7,1', '+CREC: 7,1,24966,0', '', 'OK']
 		return read[1].split(": ")[1].split(",")[2]
-			
 
-	
+
+
